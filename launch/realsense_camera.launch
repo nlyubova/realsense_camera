@@ -58,10 +58,15 @@
     <arg name="debug_depth_unit" default="false" />
 
 	<!-- camera calibration file url -->
+<<<<<<< HEAD
     <!-- <arg name="rgb_camera_info_url" default="file://$(find realsense_camera)/data/realsense_rgb_calibration_$(arg rgb_frame_w).yaml" />
     <arg name="ir_camera_info_url" default="file://$(find realsense_camera)/data/realsense_depth_calibration.yaml" /> -->
     <arg name="rgb_camera_info_url" default="" />
     <arg name="ir_camera_info_url" default="" />
+=======
+    <arg name="rgb_camera_info_url" default="file://$(find realsense_camera)/data/realsense_rgb_calibration_640.yaml" />
+    <arg name="ir_camera_info_url" default="file://$(find realsense_camera)/data/realsense_depth_calibration.yaml" />
+>>>>>>> publishing depth in 32F and making to work with ORK
 
     <node name="realsense_node" pkg="realsense_camera" type="realsense_camera_node" output="screen">
     	<param name="realsense_camera_type" value="$(arg realsense_camera_type)" />
