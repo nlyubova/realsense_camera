@@ -38,6 +38,7 @@
 
 #define USE_BGR24 0
 
+//#define V4L2_PIX_FMT_INZI 1
 
 using namespace cv;
 using namespace std;
@@ -133,6 +134,7 @@ ros::Publisher realsense_reg_points_pub;
 
 image_transport::CameraPublisher realsense_rgb_image_pub;
 image_transport::CameraPublisher realsense_depth_image_pub;
+
 #ifdef V4L2_PIX_FMT_INZI
 image_transport::CameraPublisher realsense_infrared_image_pub;
 #endif
@@ -212,6 +214,7 @@ initDepthToRGBUVMap()
         }
     }
 
+std::cout << " **** " << depthToRGBUVMapALL.size() << " == " << (depth_uv_enable_max - depth_uv_enable_min + 1) << std::endl;
     if(depthToRGBUVMapALL.size() == (depth_uv_enable_max - depth_uv_enable_min + 1))
     {
     	isHaveD2RGBUVMap = true;
@@ -264,6 +267,7 @@ pubRealSensePointsXYZCloudMsg(pcl::PointCloud<pcl::PointXYZ>::Ptr &xyz_input)
 void
 pubRealSensePointsXYZRGBCloudMsg(pcl::PointCloud<PointType>::Ptr &xyzrgb_input)
 {
+std::cout << " ***************** " << std::endl;
     pcl::PCLPointCloud2 pcl_xyzrgb_pc2;
     pcl::toPCLPointCloud2 (*xyzrgb_input, pcl_xyzrgb_pc2);
 
@@ -289,10 +293,10 @@ pubRealSenseDepthImageMsg(cv::Mat& depth_mat)
 	depth_img->width = depth_mat.cols;
 	depth_img->height = depth_mat.rows;
 
-	depth_img->encoding = sensor_msgs::image_encodings::MONO8;
+  depth_img->encoding = sensor_msgs::image_encodings::MONO8;
 	depth_img->is_bigendian = 0;
 
-	int step = sizeof(unsigned char) * depth_img->width;
+  int step = sizeof(unsigned char) * depth_img->width;
 	int size = step * depth_img->height;
 	depth_img->step = step;
 	depth_img->data.resize(size);
@@ -302,9 +306,46 @@ pubRealSenseDepthImageMsg(cv::Mat& depth_mat)
 	ir_camera_info->header.stamp = head_time_stamp;
 	ir_camera_info->header.seq = head_sequence_id;
 
+/*double minVal, maxVal;
+cv::minMaxLoc(depth_mat, &minVal, &maxVal);
+std::cout << " ***** " << minVal << " " << maxVal << std::endl;*/
+
 	realsense_depth_image_pub.publish(depth_img, ir_camera_info);
+  //pub_depth_info.publish(ir_camera_info);
 }
 
+void
+pubRealSenseDepthImageMsg32F(cv::Mat& depth_mat)
+{
+  sensor_msgs::ImagePtr depth_img(new sensor_msgs::Image);
+
+  depth_img->header.seq = head_sequence_id;
+  depth_img->header.stamp = head_time_stamp;
+  depth_img->header.frame_id = depth_frame_id;
+
+  depth_img->width = depth_mat.cols;
+  depth_img->height = depth_mat.rows;
+
+  depth_img->encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+  depth_img->is_bigendian = 0;
+
+  int step = sizeof(float) * depth_img->width;
+  int size = step * depth_img->height;
+  depth_img->step = step;
+  depth_img->data.resize(size);
+  memcpy(&depth_img->data[0], depth_mat.data, size);
+
+  ir_camera_info->header.frame_id = depth_frame_id;
+  ir_camera_info->header.stamp = head_time_stamp;
+  ir_camera_info->header.seq = head_sequence_id;
+
+/*double minVal, maxVal;
+cv::minMaxLoc(depth_mat, &minVal, &maxVal);
+std::cout << " ***** " << minVal << " " << maxVal << std::endl;*/
+
+  realsense_depth_image_pub.publish(depth_img, ir_camera_info);
+//pub_depth_info.publish(ir_camera_info);
+}
 
 #ifdef V4L2_PIX_FMT_INZI
 void
@@ -363,6 +404,7 @@ pubRealSenseRGBImageMsg(cv::Mat& rgb_mat)
     rgb_camera_info->header.seq = head_sequence_id;
 
 	realsense_rgb_image_pub.publish(rgb_img, rgb_camera_info);
+  //pub_rgb_info.publish(rgb_camera_info);
 
 
 	//save rgb img
@@ -463,7 +505,16 @@ processRGBD()
 
     USE_TIMES_START( process_start );
 
-	cv::Mat depth_frame(depth_stream.height, depth_stream.width, CV_8UC1, depth_frame_buffer);
+  cv::Mat depth_frame(depth_stream.height, depth_stream.width, CV_8UC1, depth_frame_buffer);
+
+//added
+  cv::Mat cv_img_depth(depth_stream.height, depth_stream.width, CV_32FC1);
+
+  /*img_depth.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+  img_depth.is_bigendian = 0;
+  img_depth.step = sizeof(float) * depth_stream.width;
+  img_depth.data.resize(depth_stream.width * depth_stream.height * sizeof(float));*/
+//
 
 #ifdef V4L2_PIX_FMT_INZI
 	cv::Mat ir_frame(depth_stream.height, depth_stream.width, CV_8UC1, ir_frame_buffer);
@@ -514,11 +565,14 @@ processRGBD()
 
     USE_TIMES_START( process_start );
 
+cv::MatIterator_<float> it;
+it = cv_img_depth.begin<float>();
+
     //depth value
 	//#pragma omp parallel for
     for(int i=0; i<depth_stream.width * depth_stream.height; ++i)
     {
-    	float depth = 0;
+      float depth = 0.0f;
 #ifdef V4L2_PIX_FMT_INZI
 			unsigned short* depth_ptr = (unsigned short*)((unsigned char*)(depth_stream.fillbuf) + i*3);
 			unsigned char* ir_ptr = (unsigned char*)(depth_stream.fillbuf) + i*3+2;
@@ -534,6 +588,17 @@ processRGBD()
 #endif
 
         depth_frame_buffer[i] = depth ? 255 * (sensor_depth_max - depth) / sensor_depth_max : 0;
+if (it != cv_img_depth.end<float>())
+{
+  if(depth>0.000001f)
+    *it = depth * depth_scale;
+  else
+    *it = std::numeric_limits<float>::quiet_NaN();
+
+  ++it;
+}
+else
+  std::cout << " ********** out of data matrix" << std::endl;
 
         float uvx = -1.0f;
         float uvy = -1.0f;
@@ -647,7 +712,8 @@ processRGBD()
 #ifdef V4L2_PIX_FMT_INZI
     pubRealSenseInfraredImageMsg(ir_frame);
 #endif
-    pubRealSenseDepthImageMsg(depth_frame);
+    //pubRealSenseDepthImageMsg(depth_frame);
+    pubRealSenseDepthImageMsg32F(cv_img_depth);
 
     pubRealSensePointsXYZCloudMsg(realsense_xyz_cloud);
     if(isHaveD2RGBUVMap)
@@ -925,7 +991,8 @@ int main(int argc, char* argv[])
     if (!rgb_info_url.empty())
 	{
 		std::string camera_name_rgb = "realsense_camera_rgb_" + useDeviceSerialNum;
-		camera_info_manager::CameraInfoManager rgb_info_manager(n, camera_name_rgb, rgb_info_url);
+    camera_info_manager::CameraInfoManager rgb_info_manager(n, camera_name_rgb, rgb_info_url);
+
 		if (rgb_info_manager.isCalibrated())
 		{
 			rgb_camera_info = boost::make_shared<sensor_msgs::CameraInfo>(rgb_info_manager.getCameraInfo());
@@ -986,6 +1053,9 @@ int main(int argc, char* argv[])
 
     realsense_rgb_image_pub = image_transport.advertiseCamera(topic_image_rgb_raw_id, 1);
     realsense_depth_image_pub = image_transport.advertiseCamera(topic_image_depth_raw_id, 1);
+
+    //pub_depth_info = n.advertise<sensor_msgs::CameraInfo>("depth/camera_info", 1);
+    //pub_rgb_info = n.advertise<sensor_msgs::CameraInfo>("rgb/camera_info", 1);
 
 #ifdef V4L2_PIX_FMT_INZI
     realsense_infrared_image_pub = image_transport.advertiseCamera(topic_image_infrared_raw_id, 1);

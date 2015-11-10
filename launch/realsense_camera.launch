@@ -27,8 +27,8 @@
     <arg name="rgb_frame_id" default="$(arg camera)_rgb_optical_frame" />
     <arg name="depth_frame_id" default="$(arg camera)_depth_optical_frame" />
 
-	<arg name="rgb_frame_w" default="1280" />
-	<arg name="rgb_frame_h" default="720" />
+	<arg name="rgb_frame_w" default="640" /> <!--1280 -->
+	<arg name="rgb_frame_h" default="480" /> <!-- 720 -->
 
     <arg name="depth_unit" default="33.1" />
     <arg name="depth_scale" default="0.001" />
@@ -54,8 +54,8 @@
     <arg name="debug_depth_unit" default="false" />
 
 	<!-- camera calibration file url -->
-    <arg name="rgb_camera_info_url" default="" />
-    <arg name="ir_camera_info_url" default="" />
+    <arg name="rgb_camera_info_url" default="file://$(find realsense_camera)/data/realsense_rgb_calibration_640.yaml" />
+    <arg name="ir_camera_info_url" default="file://$(find realsense_camera)/data/realsense_depth_calibration.yaml" />
 
     <node name="realsense_node" pkg="realsense_camera" type="realsense_camera_node" output="screen">
     	<param name="realsense_camera_type" value="$(arg realsense_camera_type)" />
