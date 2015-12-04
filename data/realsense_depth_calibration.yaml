@@ -4,7 +4,7 @@ camera_name: realsense_camera_ir_039140078507
 camera_matrix:
   rows: 3
   cols: 3
-  data: [472.677811, 0, 321.253302, 0, 474.45026, 233.193881, 0, 0, 1]
+  data: [463.888885, 0, 320.0, 0, 463.888885, 240.0, 0, 0, 1]
 distortion_model: plumb_bob
 distortion_coefficients:
   rows: 1
@@ -17,4 +17,4 @@ rectification_matrix:
 projection_matrix:
   rows: 3
   cols: 4
-  data: [434.666718, 0, 321.428959, 0, 0, 454.095825, 233.332878, 0, 0, 0, 1, 0]
+  data: [463.888885, 0, 320.0, 0, 0, 463.888885, 240.0, 0, 0, 0, 1, 0]
