@@ -492,12 +492,29 @@ processRGBD()
     int stream_depth_state = 0;
     int stream_rgb_state = 0;
 
-    stream_depth_state = processDepth();
-    stream_rgb_state = processRGB();
+    int count = 0;
+    stream_depth_state = true;
+    while ((stream_depth_state) && (count < 1000))
+    {
+      stream_depth_state = processDepth();
+      ++count;
+    }
+    if(stream_depth_state)
+    {
+        printf("\nstream state error  depth = %d, rgb = %d\n", stream_depth_state, stream_rgb_state);
+        return;
+    }
+    count = 0;
+    stream_rgb_state = true;
+    while((stream_rgb_state) && (count < 100))
+    {
+      stream_rgb_state = processRGB();
+      ++count;
+    }
 
     USE_TIMES_END_SHOW ( process_start, process_end, "get RGBD time" );
 
-    if(stream_depth_state || stream_rgb_state)
+    if(stream_rgb_state)
     {
         printf("\nstream state error  depth = %d, rgb = %d\n", stream_depth_state, stream_rgb_state);
         return;

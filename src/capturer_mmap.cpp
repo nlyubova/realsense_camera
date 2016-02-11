@@ -355,7 +355,7 @@ int mainloop(int * fd, FrameBuffer *buffer, void **fillbuf)
 		FD_SET (*fd, &fds);
 
 		/* Select Timeout */
-        tv.tv_sec = 2;
+        tv.tv_sec = 5;
         tv.tv_usec = 0;
 
 		//the classic select function, who allows to wait up to 2 seconds,
