@@ -158,7 +158,7 @@ void list_devices(std::string &target_name, std::vector<VIDEO_DEVICE> &device_li
 
         std::string card_name = (const char *)vcap.card;
 
-        if(target_name == card_name)
+        if(card_name.find(target_name.c_str()) != std::string::npos)
         {
         	std::string bus_info((const char *)vcap.bus_info);
 			cards[bus_info].push_back(*iter);
